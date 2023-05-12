@@ -28,11 +28,14 @@ import addon_utils
 
 
 def get_dependencies_path():
-    # Dependencies to be installed in same folder as addon
-    for mod in addon_utils.modules():
-        if mod.bl_info['name'] == "DeepBump":
-            return os.path.dirname(mod.__file__)
-    return None
+    return next(
+        (
+            os.path.dirname(mod.__file__)
+            for mod in addon_utils.modules()
+            if mod.bl_info['name'] == "DeepBump"
+        ),
+        None,
+    )
 
 
 # Python dependencies management helpers from :
@@ -129,7 +132,7 @@ class DEEPBUMP_OT_ColorToNormalsOperator(Operator):
     progress_started = False
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         if context.active_node is not None :
             selected_node_type = context.active_node.bl_idname
             return (context.area.type == 'NODE_EDITOR') and (selected_node_type == 'ShaderNodeTexImage')
@@ -163,7 +166,7 @@ class DEEPBUMP_OT_ColorToNormalsOperator(Operator):
 
         # Create new image datablock
         input_img_name = os.path.splitext(input_bl_img.name)
-        output_img_name = input_img_name[0] + '_normals' + input_img_name[1]
+        output_img_name = f'{input_img_name[0]}_normals{input_img_name[1]}'
         output_bl_img = bpy.data.images.new(
             output_img_name, width=input_bl_img.size[0], height=input_bl_img.size[1])
         output_bl_img.colorspace_settings.name = 'Non-Color'
@@ -188,12 +191,14 @@ class DEEPBUMP_OT_ColorToNormalsOperator(Operator):
                   normal_vec_node.inputs['Color'])
 
         # If input image was linked to a BSDF, link to BSDF normal slot
-        if input_node.outputs['Color'].is_linked:
-            if len(input_node.outputs['Color'].links) == 1:
-                to_node = input_node.outputs['Color'].links[0].to_node
-                if to_node.bl_idname == 'ShaderNodeBsdfPrincipled':
-                    links.new(
-                        normal_vec_node.outputs['Normal'], to_node.inputs['Normal'])
+        if (
+            input_node.outputs['Color'].is_linked
+            and len(input_node.outputs['Color'].links) == 1
+        ):
+            to_node = input_node.outputs['Color'].links[0].to_node
+            if to_node.bl_idname == 'ShaderNodeBsdfPrincipled':
+                links.new(
+                    normal_vec_node.outputs['Normal'], to_node.inputs['Normal'])
 
         print('DeepBump Color → Normals : done')
         return {'FINISHED'}
@@ -207,7 +212,7 @@ class DEEPBUMP_OT_NormalsToHeightOperator(Operator):
     progress_started = False
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         if context.active_node is not None :
             selected_node_type = context.active_node.bl_idname
             return (context.area.type == 'NODE_EDITOR') and (selected_node_type == 'ShaderNodeTexImage')
@@ -246,7 +251,7 @@ class DEEPBUMP_OT_NormalsToHeightOperator(Operator):
 
         # Create new image datablock
         input_img_name = os.path.splitext(input_bl_img.name)
-        output_img_name = input_img_name[0] + '_height' + input_img_name[1]
+        output_img_name = f'{input_img_name[0]}_height{input_img_name[1]}'
         output_bl_img = bpy.data.images.new(
             output_img_name, width=input_bl_img.size[0], height=input_bl_img.size[1])
         output_bl_img.colorspace_settings.name = 'Non-Color'
@@ -273,7 +278,7 @@ class DEEPBUMP_OT_NormalsToCurvatureOperator(Operator):
     progress_started = False
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         if context.active_node is not None :
             selected_node_type = context.active_node.bl_idname
             return (context.area.type == 'NODE_EDITOR') and (selected_node_type == 'ShaderNodeTexImage')
@@ -312,7 +317,7 @@ class DEEPBUMP_OT_NormalsToCurvatureOperator(Operator):
 
         # Create new image datablock
         input_img_name = os.path.splitext(input_bl_img.name)
-        output_img_name = input_img_name[0] + '_curvature' + input_img_name[1]
+        output_img_name = f'{input_img_name[0]}_curvature{input_img_name[1]}'
         output_bl_img = bpy.data.images.new(
             output_img_name, width=input_bl_img.size[0], height=input_bl_img.size[1])
         output_bl_img.colorspace_settings.name = 'Non-Color'
@@ -338,7 +343,7 @@ class DEEPBUMP_OT_install_dependencies(bpy.types.Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         # Deactivate when dependencies have been installed
         return not dependencies_installed
 
@@ -376,7 +381,7 @@ class DEEPBUMP_PT_ColorToNormalsPanel(Panel):
     bl_context = 'objectmode'
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return context.object is not None
 
     def draw(self, context):
@@ -397,7 +402,7 @@ class DEEPBUMP_PT_NormalsToHeightPanel(Panel):
     bl_context = 'objectmode'
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return context.object is not None
 
     def draw(self, context):
@@ -416,7 +421,7 @@ class DEEPBUMP_PT_NormalsToCurvaturePanel(Panel):
     bl_context = 'objectmode'
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return context.object is not None
 
     def draw(self, context):

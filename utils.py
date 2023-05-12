@@ -15,7 +15,7 @@ def bl_image_to_np(bl_img):
     np_img = np.flip(np_img, axis=1)
 
     # Remove alpha
-    np_img = np_img[0:3]
+    np_img = np_img[:3]
 
     return np_img
 
@@ -29,7 +29,4 @@ def np_to_bl_pixels(np_img):
     height, width = np_img.shape[1], np_img.shape[2]
     img = np.concatenate(
         [img, np.ones((1, height, width))], axis=0)
-    # Flatten to array
-    pixels = np.transpose(img, (0, 2, 1)).flatten('F')
-    
-    return pixels
+    return np.transpose(img, (0, 2, 1)).flatten('F')
